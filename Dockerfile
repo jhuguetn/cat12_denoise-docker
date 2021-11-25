@@ -1,4 +1,4 @@
-FROM jhuguetn/cat12:0.1
+FROM jhuguetn/cat12:r1904
 
 MAINTAINER Jordi Huguet <jhuguet@barcelonabeta.org>
 

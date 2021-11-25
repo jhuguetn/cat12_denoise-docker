@@ -4,11 +4,10 @@ set -e
 
 # CONFIGURATION DETAILS
 #CONTAINER_ID=`head -1 /proc/self/cgroup | cut -d/ -f3`
-VERSION="0.1"
+VERSION="0.2"
 #RESOURCE="XXX"
 
 # INPUTS
-#echo -e "CAT$CAT_VERSION $CAT_REVISION Denoise (version ${VERSION}:${REPO_VERSION:0:8})\n"
 echo -e "CAT$CAT_VERSION $CAT_REVISION Denoise (version ${VERSION})\n"
 if [[ $# -ne 2 ]]
   then
@@ -28,10 +27,6 @@ if [[ ! -d ${OUT_DIR} ]]; then
     echo "[info] Directory not found ${OUT_DIR}"
     exit 1
 fi
-#if [[ ! -d ${LOG_DIR} ]]; then
-#    echo "[info] Directory not found: ${LOG_DIR}"
-#    mkdir -pv ${LOG_DIR}
-#fi
 
 # EXECUTION STEPS
 NII_FILE=$(find ${IN_DIR} -type f -iname "*.nii" -o -iname "*.nii.gz" | head -n 1)
