@@ -4,23 +4,22 @@ set -e
 
 # CONFIGURATION DETAILS
 #CONTAINER_ID=`head -1 /proc/self/cgroup | cut -d/ -f3`
-VERSION="0.2"
-#RESOURCE="XXX"
+VERSION="0.3"
 
 # INPUTS
 echo -e "CAT$CAT_VERSION $CAT_REVISION Denoise (version ${VERSION})\n"
 if [[ $# -ne 2 ]]
   then
-    echo "Usage: $(basename $0) INPUT_DIR OUTDIR_DIR"
+    echo "Usage: $(basename $0) INPUT_FILE OUTDIR_DIR"
     exit 1
 fi
 
-IN_DIR="$1"
+IN_FILE="$1"
 OUT_DIR="$2"
 
 # INITIAL ASSERTIONS
-if [[ ! -d ${IN_DIR} ]]; then
-    echo "[info] Directory not found ${IN_DIR}"
+if [[ ! -f ${IN_FILE} ]]; then
+    echo "[info] File not found ${IN_FILE}"
     exit 1
 fi
 if [[ ! -d ${OUT_DIR} ]]; then
@@ -29,35 +28,29 @@ if [[ ! -d ${OUT_DIR} ]]; then
 fi
 
 # EXECUTION STEPS
-NII_FILE=$(find ${IN_DIR} -type f -iname "*.nii" -o -iname "*.nii.gz" | head -n 1)
-if [[ -z ${NII_FILE} ]]; then
-    echo "[error] No valid NIFTI imaging files found in "${IN_DIR}
-    exit 1
+IN_FILE_BN=$(basename "$IN_FILE")
+IN_FILE_ROOT=${IN_FILE_BN%%.*}
+IN_FILE_EXT=${IN_FILE_BN#*.}
+
+if [[ ${IN_FILE_BN} == *.nii.gz ]]; then
+    gzip -d "${IN_FILE}"
+    IN_FILE="${IN_FILE::-3}"
 fi
 
-NII_FILE_BASENAME=$(basename "$NII_FILE")
-NII_FILE_ROOT=${NII_FILE_BASENAME%%.*}
-NII_FILE_EXT=${NII_FILE_BASENAME#*.}
+CMD="cat_standalone.sh -b /root/scripts/cat_denoise.m ${IN_FILE}"
+echo "[info] ${CMD}"
+eval "${CMD}"
 
-if [[ ${NII_FILE_BASENAME} == *.nii.gz ]]; then
-    gzip -d ${NII_FILE}
-    NII_FILE="${NII_FILE::-3}"
+CMD="cat_standalone.sh -b /root/scripts/cat_merge.m /tmp/sanlm_*.nii"
+echo "[info] ${CMD}"
+eval "${CMD}"
+
+if [[ ${IN_FILE_BN} == *.nii.gz ]]; then
+    gzip "/tmp/denoised.nii"
 fi
 
-CMD="cat_standalone.sh -b /root/scripts/cat_denoise.m ${NII_FILE}"
-echo "[info] "${CMD}
-eval ${CMD}
-
-CMD="cat_standalone.sh -b `pwd`/scripts/cat_merge.m /tmp/sanlm_*.nii"
-echo "[info] "${CMD}
-eval ${CMD}
-
-if [[ ${NII_FILE_BASENAME} == *.nii.gz ]]; then
-    gzip /tmp/denoised.nii
-fi
-
-mv /tmp/denoised.${NII_FILE_EXT} ${OUT_DIR}/${NII_FILE_ROOT}_dn.${NII_FILE_EXT}
-echo "[info] Denoised file created: ${OUT_DIR}/${NII_FILE_ROOT}_dn.${NII_FILE_EXT}"
+mv "/tmp/denoised.${IN_FILE_EXT}" "${OUT_DIR}/${IN_FILE_ROOT}_dn.${IN_FILE_EXT}"
+echo "[info] Denoised file created: ${OUT_DIR}/${IN_FILE_ROOT}_dn.${IN_FILE_EXT}"
 
 # Clean-up
 rm -rf /tmp/*
